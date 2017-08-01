@@ -49,13 +49,22 @@ echo $OUTPUT->heading(get_string('testingengine', 'qtype_opaque'));
 
 $ok = true;
 foreach ($engine->questionengines as $engineurl) {
-    echo $OUTPUT->heading(get_string('testconnectionto', 'qtype_opaque', $engineurl), 3);
+    echo $OUTPUT->heading(get_string('testconnectionto', 'qtype_opaque', $engineurl), 4);
 
     try {
         $engine->urlused = $engineurl;
         $info = $enginemanager->get_engine_info($engine);
-        if (is_array($info) && isset($info['engineinfo']['#'])) {
-            echo xml_to_dl($info['engineinfo']['#']);
+        if (is_array($info) && isset($info['engineinfo'])) {
+	        switch($engine->webservice) {
+			    case 'soap':
+			    	echo xml_to_dl($info['engineinfo']['#']);
+			    	break;
+			    case 'rest':
+			    	echo json_to_dl($info["engineinfo"]);
+			    	break;
+			    default:
+			    	throw new moodle_exception('couldnotdeterminewebservice', 'qtype_opaque', '', $engineid, "invalid webservice: {$engine->webservice}");
+		    }
         } else {
             echo $OUTPUT->notification(get_string('testconnectionunknownreturn', 'qtype_opaque'));
             echo html_writer::tag('<pre>', s($info));
@@ -86,6 +95,16 @@ function xml_to_dl($xml) {
     foreach ($xml as $element => $content) {
         $output .= html_writer::tag('dt', $element) .
                 html_writer::tag('dd', s($content['0']['#'])) . "\n";
+    }
+    $output .= html_writer::end_tag('dl');
+    return $output;
+}
+
+function json_to_dl($json) {
+    $output = html_writer::start_tag('dl');
+    foreach ($json as $element => $content) {
+        $output .= html_writer::tag('dt', $element) .
+                html_writer::tag('dd', s($content)) . "\n";
     }
     $output .= html_writer::end_tag('dl');
     return $output;

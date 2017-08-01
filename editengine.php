@@ -54,8 +54,9 @@ if ($mform->is_cancelled()) {
     $engine->name = $data->enginename;
     $engine->passkey = trim($data->passkey);
     $engine->questionengines = $mform->extracturllist($data, 'questionengineurls');
-    $engine->questionbanks = $mform->extracturllist($data, 'questionbankurls');
+    $engine->questionbanks = $mform->extractbanklist($data, 'questionbankurls');
     $engine->timeout = $data->timeout;
+    $engine->webservice = $data->webservice;
 
     qtype_opaque_engine_manager::get()->save($engine);
 
@@ -84,6 +85,7 @@ if ($engineid) {
     $defaults->questionbankurls = implode("\n", $engine->questionbanks);
     $defaults->passkey = $engine->passkey;
     $defaults->timeout = $engine->timeout;
+    $defaults->webservice = $engine->webservice;
 }
 $mform->set_data($defaults);
 

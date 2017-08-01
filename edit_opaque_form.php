@@ -68,6 +68,12 @@ class qtype_opaque_edit_form extends question_edit_form {
         $mform->addRule('remoteversion', null, 'required', null, 'client');
     }
 
+	/*
+		this is never used...
+		but works with:
+			$data = array('engineid' => '1','remoteid' => 'test','remoteversion' => '1.0');
+			$files = array();	
+	*/
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
         $enginemanager = qtype_opaque_engine_manager::get();
@@ -95,11 +101,9 @@ class qtype_opaque_edit_form extends question_edit_form {
             try {
                 $metadata = $enginemanager->get_connection($engine)->get_question_metadata(
                         $data['remoteid'], $data['remoteversion']);
-                if (isset($metadata['questionmetadata']['#']['scoring'][0]['#']['marks'][0]['#'])) {
-                    $this->_defaultmark = $metadata['questionmetadata']['#']['scoring']
-                            [0]['#']['marks'][0]['#'];
-                } else {
-                    $errors['remoteid'] = get_string('maxgradenotreturned');
+
+                if (!isset($metadata['questionmetadata'])) {
+                    $errors['remoteid'] = get_string('invalidresponse', 'qtype_opaque');
                 }
             } catch (SoapFault $sf) {
                 $errors['remoteid'] = get_string('couldnotgetquestionmetadata', 'qtype_opaque',

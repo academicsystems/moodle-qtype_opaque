@@ -67,6 +67,11 @@ class qtype_opaque_engine_edit_form extends moodleform {
         $mform->setDefault('timeout', self::DEFAULT_TIMEOUT);
         $mform->addRule('timeout', get_string('required'), 'required', null, 'client');
         $mform->addHelpButton('timeout', 'timeout', 'qtype_opaque');
+        
+        $mform->addElement('select', 'webservice', get_string('webservice', 'qtype_opaque'), array('soap' => 'SOAP', 'rest' => 'REST'));
+		$mform->setType('webservice', PARAM_NOTAGS);
+		$mform->setDefault('webservice','soap');
+		$mform->addHelpButton('webservice', 'webservice', 'qtype_opaque');
 
         $mform->addElement('hidden', 'engineid');
         $mform->setType('engineid', PARAM_INT);
@@ -111,12 +116,20 @@ class qtype_opaque_engine_edit_form extends moodleform {
         }
         return $urls;
     }
+    
+    public function extractbanklist($data, $field) {
+        $rawurls = preg_split('/[\r\n]+/', $data->$field);
+        $urls = array();
+        foreach ($rawurls as $url) {
+            $urls[] = trim($url);
+        }
+        return $urls;
+    }
 
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
         $this->validateurllist($data, 'questionengineurls', $errors);
-        $this->validateurllist($data, 'questionbankurls', $errors);
 
         if (empty($data['timeout']) || $data['timeout'] <= 0) {
             $errors['timeout'] = get_string('timeoutmustbepositive', 'qtype_opaque');

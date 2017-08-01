@@ -8,8 +8,9 @@
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="false" SEQUENCE="true" COMMENT="id used to identify the engine." NEXT="name"/>
         <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="The name used to identify this engine in the interface." PREVIOUS="id" NEXT="passkey"/>
-        <FIELD NAME="passkey" TYPE="char" LENGTH="8" NOTNULL="false" SEQUENCE="false" COMMENT="The passkey for the QE if required." PREVIOUS="name" NEXT="timeout"/>
+        <FIELD NAME="passkey" TYPE="char" LENGTH="1024" NOTNULL="false" SEQUENCE="false" COMMENT="The passkey for the QE if required. 1024 is to accomodate for Oauth tokens." PREVIOUS="name" NEXT="timeout"/>
         <FIELD NAME="timeout" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="false" DEFAULT="10" SEQUENCE="false" COMMENT="The connection timeout, in seconds, to use when connecting to this engine." PREVIOUS="passkey"/>
+        <FIELD NAME="webservice" TYPE="char" LENGTH="4" NOTNULL="true" DEFAULT="soap" SEQUENCE="false" COMMENT="Type of web service to use when messaging a question engine"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id" COMMENT="primary key of the table, please edit me"/>

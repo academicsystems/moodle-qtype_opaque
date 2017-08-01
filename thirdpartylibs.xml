@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<libraries>
+    <library>
+        <location>RestJSONClient/RestJSONClient.php</location>
+        <name>RestJSONClient</name>
+        <version>1.0.0</version>
+        <license>MIT</license>
+        <licenseversion>1.0</licenseversion>
+    </library>
+</libraries>

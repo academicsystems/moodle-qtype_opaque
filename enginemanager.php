@@ -223,7 +223,18 @@ class qtype_opaque_engine_manager {
      *      to make SOAP calls.
      */
     public function get_connection($engine) {
-        return new qtype_opaque_connection($engine);
+	    global $DB;
+	    $record = $DB->get_record('qtype_opaque_engines',array('id' => $engine->id),'webservice',MUST_EXIST);
+	    switch($record->webservice) {
+		    case 'soap':
+		    	return new qtype_opaque_connection_soap($engine);
+		    	break;
+		    case 'rest':
+		    	return new qtype_opaque_connection_rest($engine);
+		    	break;
+		    default:
+		    	throw new moodle_exception('couldnotdeterminewebservice', 'qtype_opaque', '', $engineid, "invalid webservice: {$record->webservice}");
+	    }
     }
 
     /**

@@ -1,0 +1,282 @@
+## Intro
+
+This gives a general explanation of how the Opaque API works. If you're interested in coding a quiz engine that implement this API, please check out the test engine repo. There, in the file rest/server.php, you will find a detailed explanation of how a quiz engine implements this API behaviour.
+
+## API
+
+How this API works.
+
+* You can configure Moodle to use a remote quiz engine for getting questions. You test your quiz engine connection with getEngineInfo().
+* You use a question in a Moodle quiz by selecting the quiz engine, and entering a question ID & question Version.
+* When the question is loaded in the quiz, it will call start(), which should return an HTML form as the question.
+* The question can have multiple steps. Each step is triggered by submiting the question form. On each step, the quiz engine calls process(). The idea is that on each step, the quiz engine will read some student input and return some new HTML.
+* The process() call might also return results for the student's quiz as well as end the question.
+
+#### GET /info
+
+> This is called when accessing the Test connection page (the button is a magnifying glass with a plus sign in it, on /question/type/opaque/engines.php). This is only used to verify that you can connect to the question engine. Data returned is not used, other than to display useful data to a site administrator. 
+
+```
+getEngineInfo()
+	request: 
+		none
+	response:
+		{
+			"engineinfo": {
+				# anything you want, it just prints the contents
+			}
+		}
+```
+
+#### GET /question/(base)/(qid)/(version)
+
+> This is called when editing an opaque question. It's not really used other to test that the question exists.
+
+```
+getQuestionMetaData(remoteid, remoteversion, questionbaseurl)
+	request:
+		none
+	response:
+		{
+			"questionmetadata": {
+				# anything you want, it is not used
+			}
+		}
+```
+
+#### POST /session
+	
+> This is called when a question is started or when previewing a question (which can be done from the question editing page). This creates a session for the quiz question on the quiz engine, and returns the components for the question (HTML,CSS,Resources,Question Session ID) to Moodle. The only required initialparams key is the randomseed. All other params can be ignored by the quiz engine if not useful. The point of the session is to store components in memory, instead of always having to open files or make database calls to get the question components on every request.
+```
+start(remoteid, remoteversion, questionbaseurl, initialparamskeys, initialparamsvalues, cachedresources)
+	request:
+		{
+			"remoteid":"q12",
+			"remoteversion":"1.1",
+			"questionbaseurl":"algebra",
+			"initialparamskeys":{
+				"randomseed":123456789,
+				"userid":"2",
+				"language":"en",
+				"passKey":"9ijn8uhb7ygv098ygvcxs3456",
+				"preferredbehaviour":"deferredfeedback"
+			},
+			"cachedresources":[
+				# any cached resources moodle has from previously requesting this question, for example "image.png"
+			]
+		}
+	response:
+		{  
+		   "CSS":"%%IDPREFIX%%myclass{background-color:blue;}",
+		   "XHTML":"<h4 class=\"%%IDPREFIX%%myclass\">",
+		   "progressInfo":"Try 1",
+		   "questionSession":"bank:question-id:question-version:randomseed",
+		   "resources":[  
+		      {  
+		         "content":"/var/www/moodle/local/testopaqueqe/pix/world.gif",
+		         "encoding":"",
+		         "filename":"world.gif",
+		         "mimeType":"image/gif"
+		      }
+		   ]
+		}
+```
+
+> Below is a list of the request/response variables, where they are configured, and what they are for. If the explanation starts with !!!, then it is something that was implemented specifically for OpenMark, Open University's quiz engine. It may or may not be useful for you.
+
+* config locations
+	* engine - set when configuring a quiz engine on moodle
+	* moodle - not really configurable, is set by moodle
+	* opaque/ - set in some opaque file (check both behaviour & type)
+	* quiz, - set when configuring a quiz's settings
+
+req variable            | config location          | explanation
+| -- | -- | -- |
+remoteid                | question                 | (string) 1/3 of key to identify desired question, essentially the question's name
+remoteversion           | question                 | (string) 2/3 of key to identify desired question, must be in format major.minor, like 1.1
+questionbaseurl         | engine                   | (string) 3/3 of key of identify desired question, which category the question belongs to
+randomseed              | opaque/behaviour.php     | (int) randomized 32-bit int, could be 64-bit, depends on php's rand()
+userid                  | moodle                   | (int) moodle's $USER-id
+language                | moodle                   | (string) moodle's current_language()
+preferredbehaviour      | quiz, question behaviour | (string) "How questions behave", lowercase single word version of Moodle's question behaviours (see footnote)
+passKey                 | engine                   | (string) generated by - md5($engine->passkey . $userid), limited to 8 characters.
+attempt                 | opaque/question.php      | (int) !!! OpenMark uses this as randomseed instead, using Moodle's $variant to create rand number 0 - 10000
+navigatorVersion        | opaque/connection.php    | (float) !!! "1.9.9" currently hardcoded, not sure what this is for
+display_readonly        | moodle                   | (int) 0 nothing, 1 all input should be disabled. Moodle sets this to 1 for quiz reviews when student finishes.
+display_marks           | quiz, review options     | (int) 0 nothing, 1 what the question was worth, 2 how many points the student got for this question.
+display_markdp          | quiz, appearance         | (int) the number of decimal places to use for displying question marks.
+display_correctness     | quiz, review options     | (int) 0 only show if answer is correct or not, 1 if there are parts, show which parts are wrong or right
+display_feedback        | quiz, review options     | (int) 0 nothing, 1 show feedback specific to student's answer
+display_generalfeedback | quiz, review options     | (int) 0 nothing, 1 show general feedback about question
+
+> preferredbehaviour is one of Moodle's queston behaviours. Current options are explained here: https://docs.moodle.org/24/en/Question_behaviours
+
+res variable            | explanation
+| -- | -- |
+CSS                     | (string) any literal CSS that will be appended to header on question page
+XHTML                   | (string) any literal HTML that will be used to generate question (thus, should be HTML form)
+progressInfo            | (string) information about the student's quiz progress, usually "Try #" where # is the number of question submits
+questionSession         | (string) a session ID, this is purely for keeping question components in memory for faster processing of active questions
+content                 | (string) the file content, it's best to pass this in base64 encoding, but make sure to set encoding below to "base64"
+encoding                | (string) the file's encoding, set this to "base64" if your content is encoded in base64
+filename                | (string) the file's name
+mimeType                | (string) the file's mime type
+
+#### POST /session/(sid)
+
+> The call will process the question response and return the next step in the question. It returns the same kind of json as start() minus the "questionSession", but must also include "questionEnded" and may also include "result".
+
+```
+process(questionsessionid, response)
+	request:
+		{
+			"names":[
+				# any HTML input names from your question form will go here
+			],
+			"values":[
+				# any HTML input values from your question form will go here
+			]
+		}
+	response:
+		# the response is the same as start(), except when processing a finished attempt, it will also include:
+		{
+			"results": {
+				"actionSummary":"The student finished after 2 attempts.",
+				"answerLine":"The student answered 987.",
+				"attempt":2,
+				"questionLine":"What is the random seed + 5?",
+				"scores":[
+					{
+						"axis":"",
+						"marks":2
+					}
+				],
+				"customResults":[
+					{
+						"":"" # don't know what this is for
+					}
+				]
+			}
+		}
+```
+
+res variable      | explanation
+| -- | -- |
+questionEnded     | (boolean) if true, tells Moodle to end any more question submits, if false, the question can be submitted again
+actionSummary     | (string) a summary of the student's actions. (set as a behaviour_var)
+answerLine        | (string) the student's response to the question. (set to quesetion_attempt $responsesummary)
+attempt           | (int) number of attempts to get to right answer, or -1 for incorrect, -2 for partially correct, and 0 for gave up.
+questionLine      | (string) a summary of the question (set to question_attempt $questionsummary) 
+axis              | (string) ??? leave empty for now
+marks             | (int) points awarded for student response. final score is $fraction, which is marks / defaultmark, which is set to 1 in edit_opaque_form.php
+
+#### DELETE /session/(sid)
+
+> This is sent by moodle to tell the quiz engine to kill the session.
+
+> Internally, in moodle, opaque keeps a cache of an opaque state for a student's question attempt. That cache is kept in a session (statecache.php). If that session expires, opaque will send a stop() message. If a student returns to complete the question, opaque will completely recreate the start() & process() calls to recreate the opaque state.
+
+```
+stop(questionsessionid)
+	request:
+		none
+	response:
+		none
+```
+
+## Storage Locations
+
+#### mdl_qtype_opaque_engines: 
+```
++------------+---------------+------+-----+---------+----------------+
+| Field      | Type          | Null | Key | Default | Extra          |
++------------+---------------+------+-----+---------+----------------+
+| id         | bigint(10)    | NO   | PRI | NULL    | auto_increment | engineid
+| name       | varchar(255)  | NO   |     |         |                | engine name
+| passkey    | varchar(1024) | YES  |     | NULL    |                | optional passphrase for connection
+| timeout    | bigint(10)    | NO   |     | 10      |                | timeout before abandoning connection attempt
+| webservice | char(4)       | NO   |     | 'soap'  |                | use either 'soap' or 'rest' for connections
++------------+---------------+------+-----+---------+----------------+
+```
+
+#### mdl_qtype_opaque_servers:
+```
++----------+--------------+------+-----+---------+----------------+
+| Field    | Type         | Null | Key | Default | Extra          |
++----------+--------------+------+-----+---------+----------------+
+| id       | bigint(10)   | NO   | PRI | NULL    | auto_increment | random id, creates unique value with engineid
+| engineid | bigint(10)   | NO   | MUL | NULL    |                | associated engineid
+| type     | varchar(16)  | NO   |     |         |                | 'qe' or 'qb' for question banks or engines
+| url      | varchar(255) | NO   |     |         |                | single url to bank or engine
++----------+--------------+------+-----+---------+----------------+
+```
+
+#### mdl_qtype_opaque_options:
+```
++---------------+--------------+------+-----+---------+----------------+
+| Field         | Type         | Null | Key | Default | Extra          |
++---------------+--------------+------+-----+---------+----------------+
+| id            | bigint(10)   | NO   | PRI | NULL    | auto_increment | random id, creates unique value with questionid & engine id (not sure if used)
+| questionid    | bigint(10)   | NO   | MUL | NULL    |                | ??? - no idea
+| engineid      | bigint(10)   | NO   | MUL | NULL    |                | associated engineid
+| remoteid      | varchar(255) | NO   |     |         |                | id used to get question along with version
+| remoteversion | varchar(16)  | NO   |     |         |                | version used to get question along with id
++---------------+--------------+------+-----+---------+----------------+
+```
+
+## How To Use
+
+### Add an engine:
+Dashboard / Site administration / Plugins / Question types / Opaque
+
+##### Engine name 
+> anything you want, used to recognize different engines on moodle's edit engine page. ex - My Test Engine
+
+##### Question engine URLs
+> urls to the engines you want to use (they must work the same way, multiple engines is just for load-balancing). ex - https://mydomain.com
+    
+##### Question bank base URLs
+> base urls to the banks you want to use (they must work the same way, multiple banks is just for load-balancing). ex - algebra
+    
+##### Passkey
+> a random alphanumeric passkey or Oauth token that will allow moodle to talk to the question engine if it is secured with a passkey. ex - 3edc4rfv5tgb
+
+##### Connection time-out
+> number of seconds moodle will allow to try for a connection to the quiz engine. ex - 4
+
+##### Web service
+> which web service your quiz engine uses to communicate, either soap or rest. ex - REST
+		
+### Create a new quiz for a course:
+Dashboard / Courses / COURSE NAME
+
+> turn editing mode on & add a quiz with "add an activity or resource"
+
+### Edit the quiz settings:
+Dashboard / Courses / COURSE NAME / Quizzes / QUIZ NAME / Edit settings
+
+> the only thing here that might be used by Opaque is preferred behaviour, set by "Question behaviour" > "How questions behave"
+
+### Edit the question settings:
+Dashboard / Courses / COURSE NAME / Quizzes / QUIZ NAME / Question bank / Questions / Editing an opaque question
+
+> here, you set the info needed to retrieve the correct question. you can test the functionality of the question (after saving settings), with the Preview button. that will take you to a page where you can submit responses and see the history of saved response data that Moodle stores to reproduce the interaction with the question if needed.
+
+##### Question name 
+> anything you want, used to recognize different questions on the quiz
+
+##### Question engine 
+> select a quiz engine you configured previously
+
+##### Question id 
+> this must match the question id you want from the question engine
+
+##### Question version 
+> this must match the question version you want from the question engine. it should be two numbers in major.minor format
+
+## Notes for editors
+
+> Requests are made using functions defined in type/opaque/connection.php & behaviour/opaque/connection.php. If SOAP, php's built in SoapClient is extended to include API functions by contacting a WSDL. If REST, RestJSONClient is extended to include API functions using class in type/opaque/connection.php
+
+
+

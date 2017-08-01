@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/xmlize.php');
-
+require_once($CFG->libdir . '/restjsonclient.php');
 
 // In config.php, you can set
 // $CFG->qtype_opaque_soap_class = 'qtype_opaque_soap_client_with_logging';
@@ -39,7 +39,7 @@ require_once($CFG->libdir . '/xmlize.php');
  * @copyright 2011 The Open University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qtype_opaque_connection {
+class qtype_opaque_connection_soap {
 
     protected $questionbanks = array();
     protected $passkeysalt = '';
@@ -67,8 +67,9 @@ class qtype_opaque_connection {
         }
 
         $this->soapclient = new $class($url . '?wsdl', array(
-                    'soap_version'       => SOAP_1_1,
+	        		'soap_version'       => SOAP_1_1,
                     'exceptions'         => true,
+                    'cache_wsdl'         => WSDL_CACHE_NONE,
                     'connection_timeout' => $engine->timeout,
                     'features'           => SOAP_SINGLE_ELEMENT_ARRAYS,
                 ));
@@ -276,3 +277,131 @@ class qtype_opaque_soap_client_with_logging extends qtype_opaque_soap_client_wit
         return format_float($timetaken, 4);
     }
 }
+
+
+class qtype_opaque_connection_rest {
+	
+	protected $questionbanks = array();
+    protected $passkeysalt = '';
+    protected $restclient;
+	
+	public function __construct($engine) {
+        global $CFG;
+
+        if (!empty($engine->urlused)) {
+            $url = $engine->urlused;
+        } else {
+            $url = $engine->questionengines[array_rand($engine->questionengines)];
+        }
+
+        if (!empty($CFG->qtype_opaque_rest_class)) {
+            $class = $CFG->qtype_opaque_rest_class;
+        } else {
+            $class = 'qtype_opaque_rest_client';
+        }
+
+		$this->restclient = new $class(parse_url($url, PHP_URL_PATH));
+		$this->restclient->set_url($url);
+        $engine->urlused = $url;
+     
+        $this->questionbanks = $engine->questionbanks;
+        $this->passkeysalt = $engine->passkey;
+    }
+    
+    protected function generate_passkey($userid) {
+        return md5($this->passkeysalt . $userid);
+    }
+
+	protected function question_base_url() {
+        if (!empty($this->questionbanks)) {
+            return $this->questionbanks[array_rand($this->questionbanks)];
+        } else {
+            return '';
+        }
+    }
+
+    public function get_engine_info() {
+        $getengineinforesult = $this->restclient->getEngineInfo();
+        return json_decode($getengineinforesult,true);
+    }
+    
+    public function get_question_metadata($remoteid, $remoteversion) {
+        $getmetadataresult = $this->restclient->getQuestionMetadata(
+                $remoteid, $remoteversion, $this->question_base_url());
+        return json_decode($getmetadataresult,true);
+    }
+}
+
+class qtype_opaque_rest_client extends RestJSONClient {
+
+	protected $basepath = '';
+	
+	public function __construct($basepath = '') {
+		$this->basepath = $basepath;
+	}
+
+	public function getEngineInfo() {
+		$this->set_method('GET');
+		$this->set_url_path($this->basepath . '/info');
+		$this->set_url_query('');
+		$this->set_bodyjson('');
+		
+		return $this->send();
+	}
+	
+	public function getQuestionMetadata($remoteid, $remoteversion, $questionbaseurl) {
+		$this->set_method('GET');
+		$this->set_url_path($this->basepath . '/question/' . $questionbaseurl . '/' . $remoteid . '/' . $remoteversion);
+		$this->set_url_query('');
+		$this->set_bodyjson('');
+		
+		return $this->send();
+	}
+	
+	public function start($remoteid, $remoteversion, $questionbaseurl, $initialparamskeys, $initialparamsvalues, $cachedresources) {
+		$this->set_method('POST');
+		$this->set_url_path($this->basepath . '/session');
+		$this->set_url_query('');
+		
+		$bodyjson = array(
+			'questionID' => $remoteid,
+			'questionVersion' => $remoteversion,
+			'questionBaseURL' => $questionbaseurl,
+			'initialParamNames' => $initialparamskeys,
+			'initialParamValues' => $initialparamsvalues,
+			'cachedResources' => $cachedresources
+		);
+		
+		$this->set_bodyjson($bodyjson);
+		
+		$response = $this->send();
+		
+		return json_decode($response,false);
+	}
+	
+	public function process($questionsessionid, $responsekeys, $responsevalues) {
+		$this->set_method('POST');
+		$this->set_url_path($this->basepath . '/session/' . $questionsessionid);
+		$this->set_url_query('');
+		
+		$bodyjson = array(
+			'names' => $responsekeys,
+			'values' => $responsevalues
+		);
+		
+		$this->set_bodyjson($bodyjson);
+		
+		$response = $this->send();
+		return json_decode($response,false);
+    }
+
+    public function stop($questionsessionid) {
+		$this->set_method('DELETE');
+		$this->set_url_path($this->basepath . '/session/' . $questionsessionid);
+		$this->set_url_query('');
+		$this->set_bodyjson('');
+		
+		return $this->send(); // response should be empty
+    }
+}
+
