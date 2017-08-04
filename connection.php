@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/xmlize.php');
-require_once($CFG->libdir . '/restjsonclient.php');
+require_once($CFG->dirroot . '/question/type/opaque/RestJSONClient/RestJSONClient.php');
 
 // In config.php, you can set
 // $CFG->qtype_opaque_soap_class = 'qtype_opaque_soap_client_with_logging';
