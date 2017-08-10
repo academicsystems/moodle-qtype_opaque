@@ -785,7 +785,8 @@ class RestJSONClient {
 		        'content' => $body,
 		        'protocol_version' => $this->protocol_version,
 		        'timeout' => $this->timeout,
-		        'user_agent' => 'RestJSONClient ' . self::VERSION
+		        'user_agent' => 'RestJSONClient ' . self::VERSION,
+		        'ignore_errors' => true
 		    )
 		);
 		
