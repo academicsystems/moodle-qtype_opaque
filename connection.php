@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/xmlize.php');
-require_once($CFG->libdir . '/restjsonclient.php');
+require_once($CFG->dirroot . '/question/type/opaque/RestJSONClient/RestJSONClient.php');
 
 // In config.php, you can set
 // $CFG->qtype_opaque_soap_class = 'qtype_opaque_soap_client_with_logging';
@@ -281,11 +281,11 @@ class qtype_opaque_soap_client_with_logging extends qtype_opaque_soap_client_wit
 
 class qtype_opaque_connection_rest {
 	
-	protected $questionbanks = array();
+    protected $questionbanks = array();
     protected $passkeysalt = '';
     protected $restclient;
 	
-	public function __construct($engine) {
+    public function __construct($engine) {
         global $CFG;
 
         if (!empty($engine->urlused)) {
@@ -298,10 +298,10 @@ class qtype_opaque_connection_rest {
             $class = $CFG->qtype_opaque_rest_class;
         } else {
             $class = 'qtype_opaque_rest_client';
-        }
+       }
 
-		$this->restclient = new $class(parse_url($url, PHP_URL_PATH));
-		$this->restclient->set_url($url);
+	$this->restclient = new $class($url);
+	$this->restclient->set_url($url);
         $engine->urlused = $url;
      
         $this->questionbanks = $engine->questionbanks;
@@ -342,8 +342,7 @@ class qtype_opaque_rest_client extends RestJSONClient {
 
 	public function getEngineInfo() {
 		$this->set_method('GET');
-		$this->set_url_path($this->basepath . '/info');
-		$this->set_url_query('');
+		$this->set_url($this->basepath . '/info');
 		$this->set_bodyjson('');
 		
 		return $this->send();
@@ -351,8 +350,7 @@ class qtype_opaque_rest_client extends RestJSONClient {
 	
 	public function getQuestionMetadata($remoteid, $remoteversion, $questionbaseurl) {
 		$this->set_method('GET');
-		$this->set_url_path($this->basepath . '/question/' . $questionbaseurl . '/' . $remoteid . '/' . $remoteversion);
-		$this->set_url_query('');
+		$this->set_url($this->basepath . '/question/' . $questionbaseurl . '/' . $remoteid . '/' . $remoteversion);
 		$this->set_bodyjson('');
 		
 		return $this->send();
@@ -360,8 +358,7 @@ class qtype_opaque_rest_client extends RestJSONClient {
 	
 	public function start($remoteid, $remoteversion, $questionbaseurl, $initialparamskeys, $initialparamsvalues, $cachedresources) {
 		$this->set_method('POST');
-		$this->set_url_path($this->basepath . '/session');
-		$this->set_url_query('');
+		$this->set_url($this->basepath . '/session');
 		
 		$bodyjson = array(
 			'questionID' => $remoteid,
@@ -381,8 +378,7 @@ class qtype_opaque_rest_client extends RestJSONClient {
 	
 	public function process($questionsessionid, $responsekeys, $responsevalues) {
 		$this->set_method('POST');
-		$this->set_url_path($this->basepath . '/session/' . $questionsessionid);
-		$this->set_url_query('');
+		$this->set_url($this->basepath . '/session/' . $questionsessionid);
 		
 		$bodyjson = array(
 			'names' => $responsekeys,
@@ -397,8 +393,7 @@ class qtype_opaque_rest_client extends RestJSONClient {
 
     public function stop($questionsessionid) {
 		$this->set_method('DELETE');
-		$this->set_url_path($this->basepath . '/session/' . $questionsessionid);
-		$this->set_url_query('');
+		$this->set_url($this->basepath . '/session/' . $questionsessionid);
 		$this->set_bodyjson('');
 		
 		return $this->send(); // response should be empty

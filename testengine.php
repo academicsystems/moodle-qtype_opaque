@@ -67,7 +67,12 @@ foreach ($engine->questionengines as $engineurl) {
 		    }
         } else {
             echo $OUTPUT->notification(get_string('testconnectionunknownreturn', 'qtype_opaque'));
-            echo html_writer::tag('<pre>', s($info));
+            if(is_array($info)) {
+                $infostr = var_export($info,true);
+                echo html_writer::tag('<pre>', s($infostr));
+            } else {
+                echo html_writer::tag('<pre>', s($info));
+            }
             $ok = false;
         }
 
