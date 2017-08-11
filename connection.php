@@ -321,7 +321,7 @@ class qtype_opaque_connection_rest {
     }
 
     public function get_engine_info() {
-        $getengineinforesult = $this->restclient->getEngineInfo();
+        $getengineinforesult = $this->restclient->getEngineInfo($this->passkeysalt);
         return json_decode($getengineinforesult,true);
     }
     
@@ -340,11 +340,17 @@ class qtype_opaque_rest_client extends RestJSONClient {
 		$this->basepath = $basepath;
 	}
 
-	public function getEngineInfo() {
+	public function getEngineInfo($passkey = null) {
 		$this->set_method('GET');
 		$this->set_url($this->basepath . '/info');
 		$this->set_bodyjson('');
-		
+
+		if ($passkey !== null) {
+                    $iv = substr(base64_encode(openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cfb8'))), 0, 16);
+                    $encrypted = openssl_encrypt('success', 'aes-256-cfb8', md5($passkey), 0, $iv); // base64 encodes by default
+                    $pk = urlencode($encrypted) . ':' . urlencode($iv);
+                    $this->set_url_query('passKey=' . $pk);
+                }
 		return $this->send();
 	}
 	

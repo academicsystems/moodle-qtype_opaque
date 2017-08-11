@@ -1,6 +1,8 @@
 <?php
 
 /*
+	v.1.0
+	
 	More information on constructing requests in php can be found at:
 	http://php.net/manual/en/context.http.php
 */
@@ -21,6 +23,8 @@ if (version_compare(phpversion(), '5.3.0', '<'))
 		
 		$timeout			- number of seconds to try for a connection
 		$protocol_version	- HTTP/1.0 or HTTP/1.1
+	
+	Important !! This class urlencodes everything for you except when you pass in a string for the url query.
 	
 	Example usage:
 
@@ -76,10 +80,10 @@ class RestJSONClient {
 		$query = "?";
 		foreach($data as $key => $value)
 		{
-			$query .= urlencode($key) . "=" . urlencode($value);
+			$query .= urlencode($key) . "=" . urlencode($value) . "&";
 		}
 		
-		return $query;
+		return substr($query, 0, -1);
 	}
 	
 	public function get_request()
@@ -632,7 +636,7 @@ class RestJSONClient {
 	
 	public function get_url()
 	{
-		return $this->scheme . urlencode($this->user) . $this->pass . $this->host . $this->port . $this->path . urlencode($this->query) . urlencode($this->frag);
+		return $this->scheme . $this->user . $this->pass . $this->host . $this->port . $this->path . $this->query . $this->frag;
 	}
 	
 	public function set_url_scheme($scheme)
@@ -727,7 +731,30 @@ class RestJSONClient {
 	{
 		if(!empty($query))
 		{
-			$this->query = "?" . urlencode($query);
+			if(is_string($query))
+			{
+				if($query[0] == "?")
+				{
+					$this->query = $query;
+				}
+				else
+				{
+					$this->query = "?" . $query;
+				}
+			}
+			else if(is_array($query))
+			{
+				$this->query = '?';
+				foreach($query as $key => $val)
+				{
+					$this->query .= urlencode($keyval[0]) . '=' . urlencode($keyval[1]) . '&';
+				}
+				$this->query = substr($this->query, 0, -1);
+			}
+			else
+			{
+				throw new Exception("Unable to parse string in set_url_query(), must be associative array, or query string.");
+			}
 		}
 	}
 	
@@ -785,7 +812,8 @@ class RestJSONClient {
 		        'content' => $body,
 		        'protocol_version' => $this->protocol_version,
 		        'timeout' => $this->timeout,
-		        'user_agent' => 'RestJSONClient ' . self::VERSION
+		        'user_agent' => 'RestJSONClient ' . self::VERSION,
+		        'ignore_errors' => true
 		    )
 		);
 		
@@ -797,4 +825,5 @@ class RestJSONClient {
 		return $this->response;
 	}
 }
+
 
