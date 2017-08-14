@@ -312,7 +312,14 @@ class qtype_opaque_connection_rest {
         return md5($this->passkeysalt . $userid);
     }
 
-	protected function question_base_url() {
+    protected function getpasskeyquery() {
+        $iv = substr(base64_encode(openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cfb8'))), 0, 16);
+        $encrypted = openssl_encrypt('success', 'aes-256-cfb8', md5($this->passkeysalt), 0, $iv); // base64 encodes by default
+        $pk = urlencode($encrypted) . ':' . urlencode($iv);
+        return $pk;
+    }
+
+    protected function question_base_url() {
         if (!empty($this->questionbanks)) {
             return $this->questionbanks[array_rand($this->questionbanks)];
         } else {
@@ -321,13 +328,23 @@ class qtype_opaque_connection_rest {
     }
 
     public function get_engine_info() {
-        $getengineinforesult = $this->restclient->getEngineInfo($this->passkeysalt);
+	$pk = null;
+        if(!empty($this->passkeysalt)) {
+            $pk = $this->getpasskeyquery();
+        }
+
+        $getengineinforesult = $this->restclient->getEngineInfo($pk);
         return json_decode($getengineinforesult,true);
     }
     
     public function get_question_metadata($remoteid, $remoteversion) {
+        $pk = null;
+        if(!empty($this->passkeysalt)) {
+            $pk = $this->getpasskeyquery();
+        }
+
         $getmetadataresult = $this->restclient->getQuestionMetadata(
-                $remoteid, $remoteversion, $this->question_base_url());
+                $remoteid, $remoteversion, $this->question_base_url(), $pk);
         return json_decode($getmetadataresult,true);
     }
 }
@@ -335,30 +352,30 @@ class qtype_opaque_connection_rest {
 class qtype_opaque_rest_client extends RestJSONClient {
 
 	protected $basepath = '';
-	
-	public function __construct($basepath = '') {
+
+	public function __construct($basepath = '',$passkey = '') {
 		$this->basepath = $basepath;
 	}
 
-	public function getEngineInfo($passkey = null) {
+	public function getEngineInfo($pk = '') {
 		$this->set_method('GET');
 		$this->set_url($this->basepath . '/info');
 		$this->set_bodyjson('');
 
-		if ($passkey !== null) {
-                    $iv = substr(base64_encode(openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cfb8'))), 0, 16);
-                    $encrypted = openssl_encrypt('success', 'aes-256-cfb8', md5($passkey), 0, $iv); // base64 encodes by default
-                    $pk = urlencode($encrypted) . ':' . urlencode($iv);
-                    $this->set_url_query('passKey=' . $pk);
+		if (!empty($pk)) {
+                     $this->set_url_query('passKey=' . $pk);
                 }
 		return $this->send();
 	}
 	
-	public function getQuestionMetadata($remoteid, $remoteversion, $questionbaseurl) {
+	public function getQuestionMetadata($remoteid, $remoteversion, $questionbaseurl, $pk = '') {
 		$this->set_method('GET');
 		$this->set_url($this->basepath . '/question/' . $questionbaseurl . '/' . $remoteid . '/' . $remoteversion);
 		$this->set_bodyjson('');
-		
+
+		if (!empty($pk)) {
+                     $this->set_url_query('passKey=' . $pk);
+                }	
 		return $this->send();
 	}
 	
@@ -397,11 +414,14 @@ class qtype_opaque_rest_client extends RestJSONClient {
 		return json_decode($response,false);
     }
 
-    public function stop($questionsessionid) {
+    public function stop($questionsessionid, $pk) {
 		$this->set_method('DELETE');
 		$this->set_url($this->basepath . '/session/' . $questionsessionid);
 		$this->set_bodyjson('');
 		
+		if (!empty($pk)) {
+                     $this->set_url_query('passKey=' . $pk);
+                }
 		return $this->send(); // response should be empty
     }
 }
