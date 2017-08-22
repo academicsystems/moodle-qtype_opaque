@@ -45,7 +45,7 @@ class RestJSONClient {
 	private $request = "";
 	private $response = "";
 	
-	private $timeout = 2;
+	private $timeout = 5;
 	private $protocol_version = "1.0";
 
 	private $scheme = "";
