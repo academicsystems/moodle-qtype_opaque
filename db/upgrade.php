@@ -102,7 +102,7 @@ function xmldb_qtype_opaque_upgrade($oldversion) {
         $dbman->change_field_precision($table, $field);
 
         // Qtype opaque savepoint reached.
-        upgrade_plugin_savepoint(true, 2011092600, 'qtype', 'opaque');
+        upgrade_plugin_savepoint(true, 2017100203, 'qtype', 'opaque');
     }
 
     return true;
