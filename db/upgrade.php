@@ -87,5 +87,23 @@ function xmldb_qtype_opaque_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2011102402, 'qtype', 'opaque');
     }
 
+    if ($oldversion < 2017100203) {
+        // Add webservice column to choose between REST & SOAP
+        $table = new xmldb_table('qtype_opaque_engines');
+        $field = new xmldb_field('webservice', XMLDB_TYPE_CHAR, '4', null,
+                XMLDB_NOTNULL, null, 'soap', 'timeout');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Passkey updated to 1024 char to accomodate Oauth
+        $field = new xmldb_field('passkey', XMLDB_TYPE_CHAR, '1024', null, null, null, null, 'name');
+        $dbman->change_field_precision($table, $field);
+
+        // Qtype opaque savepoint reached.
+        upgrade_plugin_savepoint(true, 2011092600, 'qtype', 'opaque');
+    }
+
     return true;
 }
