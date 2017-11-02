@@ -39,6 +39,8 @@ class qtype_opaque_question extends question_with_responses {
     public $remoteid;
     /** @var string the version number of this question to use. */
     public $remoteversion;
+    /** @var string the question file to use, if needed. */
+    public $questionfile;
 
     public function make_behaviour(question_attempt $qa, $preferredbehaviour) {
         return question_engine::make_behaviour('opaque', $qa, $preferredbehaviour);

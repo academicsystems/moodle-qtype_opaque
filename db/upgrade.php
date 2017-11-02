@@ -104,6 +104,20 @@ function xmldb_qtype_opaque_upgrade($oldversion) {
         // Qtype opaque savepoint reached.
         upgrade_plugin_savepoint(true, 2017100203, 'qtype', 'opaque');
     }
+    
+    if ($oldversion < 2017110104) {
+        // Define field questionfile to be added to qtype_opaque_options.
+        $table = new xmldb_table('qtype_opaque_options');
+        $field = new xmldb_field('questionfile', XMLDB_TYPE_TEXT, null, null, null, null, null, 'remoteversion');
+
+        // Conditionally launch add field questionfile.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Opaque savepoint reached.
+        upgrade_plugin_savepoint(true, 2017110104, 'qtype', 'opaque');
+    }
 
     return true;
 }

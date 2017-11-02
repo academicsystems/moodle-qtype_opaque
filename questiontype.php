@@ -57,7 +57,7 @@ class qtype_opaque extends question_type {
     }
 
     public function extra_question_fields() {
-        return array('qtype_opaque_options', 'engineid', 'remoteid', 'remoteversion');
+        return array('qtype_opaque_options', 'engineid', 'remoteid', 'remoteversion', 'questionfile');
     }
 
     public function save_question($question, $form) {
@@ -73,6 +73,7 @@ class qtype_opaque extends question_type {
         $question->engineid = $questiondata->options->engineid;
         $question->remoteid = $questiondata->options->remoteid;
         $question->remoteversion = $questiondata->options->remoteversion;
+        $question->questionfile = $questiondata->options->questionfile;
     }
 
     public function get_random_guess_score($questiondata) {
@@ -83,6 +84,7 @@ class qtype_opaque extends question_type {
         $expout = '';
         $expout .= '    <remoteid>' . $question->options->remoteid . "</remoteid>\n";
         $expout .= '    <remoteversion>' . $question->options->remoteversion . "</remoteversion>\n";
+        $expout .= '    <questionfile>' . $question->options->questionfile . "</questionfile>\n";
         $expout .= "    <engine>\n";
         $engine = $this->enginemanager->load($question->options->engineid);
         $expout .= "      <name>\n" . $format->writetext($engine->name, 4) . "      </name>\n";
@@ -110,6 +112,8 @@ class qtype_opaque extends question_type {
                 '', false, get_string('missingremoteidinimport', 'qtype_opaque'));
         $question->remoteversion = $format->getpath($data, array('#', 'remoteversion', 0, '#'),
                 '', false, get_string('missingremoteversioninimport', 'qtype_opaque'));
+        $question->questionfile = $format->getpath($data, array('#', 'questionfile', 0, '#'),
+                '', false, get_string('missingquestionfileinimport', 'qtype_opaque'));
 
         // Engine bit.
         $strerror = get_string('missingenginedetailsinimport', 'qtype_opaque');

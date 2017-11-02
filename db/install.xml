@@ -34,7 +34,8 @@
         <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="false" SEQUENCE="false" COMMENT="The id of the question this row relates to." PREVIOUS="id" NEXT="engineid"/>
         <FIELD NAME="engineid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="false" SEQUENCE="false" COMMENT="The remote engine that provides this question. Refers to question_opaaque_engines.id." PREVIOUS="questionid" NEXT="remoteid"/>
         <FIELD NAME="remoteid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="The id of this question - meaningful to the remote engine." PREVIOUS="engineid" NEXT="remoteversion"/>
-        <FIELD NAME="remoteversion" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false" COMMENT="The version of this question - meaningful to the remote engine." PREVIOUS="remoteid"/>
+        <FIELD NAME="remoteversion" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false" COMMENT="The version of this question - meaningful to the remote engine." PREVIOUS="remoteid" NEXT="questionfile"/>
+        <FIELD NAME="questionfile" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="The question file - if the quiz engine allows sending local files." PREVIOUS="remoteversion"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id" COMMENT="primary key of the table, please edit me" NEXT="quesopaq_eng_fk"/>

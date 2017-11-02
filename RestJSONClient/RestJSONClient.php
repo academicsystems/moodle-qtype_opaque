@@ -1,7 +1,7 @@
 <?php
 
 /*
-	v.1.0
+	v.1.1
 	
 	More information on constructing requests in php can be found at:
 	http://php.net/manual/en/context.http.php
@@ -47,7 +47,9 @@ class RestJSONClient {
 	private $method = "";
 	
 	private $request = "";
-	private $response = "";
+	
+	private $response_head = array();
+	private $response_body = "";
 	
 	private $timeout = 5;
 	private $protocol_version = "1.0";
@@ -820,10 +822,24 @@ class RestJSONClient {
 		/* create stream, send request, return response */
 		$context  = stream_context_create($options);
 
-		$this->response = file_get_contents($url, false, $context);
+		$this->response_body = file_get_contents($url, false, $context);
+		$this->response_head = $http_response_header;
 		
-		return $this->response;
+		try {
+			$rdata = explode(' ', $http_response_header[0]);
+			$status_line = array('version' => $rdata[0],'code' => $rdata[1], 'reason' => $rdata[2]);
+			unset($http_response_header[0]);
+			
+			$response_headers = array();
+			foreach($http_response_header as $key => $value) {
+				$parts = explode(':', $value, 2);
+				$response_headers[$parts[0]] = $parts[1];
+			}
+		} catch(Exception $e) {
+			$status_line = null;
+			$response_headers = null;
+		}
+		
+		return array('status-line' => $status_line, 'headers' => $response_headers, 'body' => $this->response_body);
 	}
 }
-
-
