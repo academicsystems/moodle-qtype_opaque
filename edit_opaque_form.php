@@ -96,21 +96,17 @@ class qtype_opaque_edit_form extends question_edit_form {
         // Try connecting to the remote question engine both as extra validation of the id, and
         // also to get the default grade.
         if ($remoteidok) {
-	        // try posting the question file, if user entered question file
+	        // try posting the question file, if user entered a question file
 	        if(!empty($data['questionfile'])) {
 	            try {
 		            $message = $enginemanager->get_connection($engine)->post_question_file(
 		            	$data['questionfile'], $data['remoteid'], $data['remoteversion']);
 		            
-		            if (!isset($message['result'])) {
-			            if(!isset($message['errors'])) {
-				            $errors['questionfile'] = get_string('invalidresponse', 'qtype_opaque');
-			            } else {
-				            $errors['questionfile'] = get_string('questionpostnotsupported', 'qtype_opaque', $message['errors']);
-			            }
-                    }
+		            if(isset($message['errors'])) {
+			            $errors['questionfile'] = get_string('questionposterror', 'qtype_opaque', $message['errors']);
+		            }
 	            } catch (Exception $e) {
-		            $errors['questionfile'] = get_string('couldnotpostquestionfile', 'qtype_opaque');
+		            $errors['questionfile'] = get_string('couldnotpostquestionfile', 'qtype_opaque', str($e));
 	            }
             }
 	        

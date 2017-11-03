@@ -402,11 +402,14 @@ class qtype_opaque_rest_client extends RestJSONClient {
 	public function postQuestionFile($questionfile, $remoteid, $remoteversion, $questionbaseurl, $pk = '') {
 		$this->set_method('POST');
 		$this->set_url($this->basepath . '/question/' . $questionbaseurl . '/' . $remoteid . '/' . $remoteversion);
-		$this->set_bodyjson(array('questionfile' => $questionfile));
+		
+		$data = array('questionFile' => $questionfile);
 
 		if(!empty($pk)) {
-			$this->set_url_query('passKey=' . $pk);
+			$data['passKey'] = $pk;
 		}
+		
+		$this->set_bodyjson($data);
 		
 		return $this->send();
 	}
