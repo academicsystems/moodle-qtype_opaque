@@ -349,7 +349,7 @@ class qtype_opaque_connection_rest {
 		
 		$decoded = json_decode($getmetadataresult['body'],true);
 		if($decoded == null) {
-			return array('errors' => 'Status: ' . $getmetadataresult['status-line']['code'] . '<br>Body: ' . $getmetadataresult['body']);
+			return array('error' => 'Status: ' . $getmetadataresult['status-line']['code'] . '<br>Body: ' . $getmetadataresult['body']);
 		} else {
 			return $decoded;
 		}
@@ -367,7 +367,7 @@ class qtype_opaque_connection_rest {
 		$decoded = json_decode($postquestionfileresult['body'],true);
 		if($decoded == null) {
 			// probably indicates the quiz engine does not support question posting
-			return array('errors' => 'Status: ' . $postquestionfileresult['status-line']['code'] . '<br>Body: ' . $postquestionfileresult['body']);
+			return array('error' => 'Status: ' . $postquestionfileresult['status-line']['code'] . '<br>Body: ' . $postquestionfileresult['body']);
 		} else {
 			return $decoded;
 		}

@@ -102,8 +102,8 @@ class qtype_opaque_edit_form extends question_edit_form {
 		            $message = $enginemanager->get_connection($engine)->post_question_file(
 		            	$data['questionfile'], $data['remoteid'], $data['remoteversion']);
 		            
-		            if(isset($message['errors'])) {
-			            $errors['questionfile'] = get_string('questionposterror', 'qtype_opaque', $message['errors']);
+		            if(isset($message['error'])) {
+			            $errors['questionfile'] = get_string('questionposterror', 'qtype_opaque', $message['error']);
 		            }
 	            } catch (Exception $e) {
 		            $errors['questionfile'] = get_string('couldnotpostquestionfile', 'qtype_opaque', str($e));
@@ -116,8 +116,8 @@ class qtype_opaque_edit_form extends question_edit_form {
                         $data['remoteid'], $data['remoteversion']);
 
                 if (!isset($metadata['questionmetadata'])) {
-	                if(isset($metadata['errors'])) {
-		                $errors['remoteid'] = get_string('invalidresponse', 'qtype_opaque', $metadata['errors']);
+	                if(isset($metadata['error'])) {
+		                $errors['remoteid'] = get_string('invalidresponse', 'qtype_opaque', $metadata['error']);
 		             } else {
 			             $errors['remoteid'] = get_string('invalidresponse', 'qtype_opaque');
 		             }
