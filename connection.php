@@ -346,6 +346,13 @@ class qtype_opaque_connection_rest {
 		$getmetadataresult = $this->restclient->getQuestionMetadata(
 				$remoteid, $remoteversion, $this->question_base_url(), $pk);
 		return json_decode($getmetadataresult['body'],true);
+		
+		$decoded = json_decode($getmetadataresult['body'],true);
+		if($decoded == null) {
+			return array('errors' => 'Status: ' . $getmetadataresult['status-line']['code'] . '<br>Body: ' . $getmetadataresult['body']);
+		} else {
+			return $decoded;
+		}
 	}
 	
 	public function post_question_file($questionfile, $remoteid, $remoteversion) {
@@ -359,7 +366,7 @@ class qtype_opaque_connection_rest {
 		
 		$decoded = json_decode($postquestionfileresult['body'],true);
 		if($decoded == null) {
-			// indicates the quiz engine does not support
+			// probably indicates the quiz engine does not support question posting
 			return array('errors' => 'Status: ' . $postquestionfileresult['status-line']['code'] . '<br>Body: ' . $postquestionfileresult['body']);
 		} else {
 			return $decoded;
