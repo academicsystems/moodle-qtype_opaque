@@ -68,7 +68,7 @@ class qtype_opaque_edit_form extends question_edit_form {
         $mform->addRule('remoteversion', null, 'required', null, 'client');
         
         $mform->addElement('textarea', 'questionfile',
-                get_string('questionfile', 'qtype_opaque'), array('rows' => 35, 'cols' => 80, 'placeholder' => 'If allowed by the quiz engine, you can overwrite the question here.'));
+                get_string('questionfile', 'qtype_opaque'), array('rows' => 35, 'cols' => 80, 'placeholder' => 'If allowed by the quiz engine, you can overwrite the question here.', 'style' => 'font-family:"Courier New", Courier, monospace'));
         $mform->setType('questionfile', PARAM_RAW);
     }
 
