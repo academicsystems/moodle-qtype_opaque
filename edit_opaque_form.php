@@ -119,7 +119,7 @@ class qtype_opaque_edit_form extends question_edit_form {
 	                if(isset($metadata['error'])) {
 		                $errors['remoteid'] = get_string('invalidresponse', 'qtype_opaque', $metadata['error']);
 		             } else {
-			             $errors['remoteid'] = get_string('invalidresponse', 'qtype_opaque');
+			             $errors['remoteid'] = get_string('invalidresponse', 'qtype_opaque', 'Metadata: ' . implode($metadata));
 		             }
                 }
             } catch (SoapFault $sf) {
